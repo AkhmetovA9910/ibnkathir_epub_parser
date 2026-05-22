@@ -4,32 +4,30 @@
 
 ## Что делает
 
-`parse_epub.py` читает EPUB, проходит по файлам сур (`content/s2.xhtml` … `content/s115.xhtml`), извлекает из каждого блока `<div class="verse">` номер аята, арабский текст и параграфы тафсира, и собирает всё в один JSON.
+`parse_epub.py` читает EPUB, проходит по файлам сур (`content/s2.xhtml` … `content/s115.xhtml`), извлекает из каждого блока `<div class="verse">` номер аята, арабский текст и параграфы тафсира, и сохраняет каждую суру в отдельный файл `output/NNN.json`.
+
+## Источник
+
+EPUB-файл `Коран. Тафсир ибн Касира.epub` взят с сайта [quran-online.ru](https://quran-online.ru/).
 
 ## Структура вывода
 
+Каждый файл `output/NNN.json` содержит одну суру:
+
 ```json
 {
-  "title": "Quran - Ибн Касир Translation",
-  "author": "Ибн Касир",
-  "language": "ru",
-  "surahs_count": 114,
-  "surahs": [
+  "number": 1,
+  "title": "Открывающая Коран (Аль-Фатиха)",
+  "name_ru": "Открывающая Коран",
+  "name_translit": "Аль-Фатиха",
+  "verses_count": 7,
+  "verses": [
     {
-      "number": 1,
-      "title": "Открывающая Коран (Аль-Фатиха)",
-      "name_ru": "Открывающая Коран",
-      "name_translit": "Аль-Фатиха",
-      "verses_count": 7,
-      "verses": [
-        {
-          "reference": "1:1",
-          "surah": 1,
-          "ayah": 1,
-          "arabic": "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ",
-          "tafsir": ["...", "..."]
-        }
-      ]
+      "reference": "1:1",
+      "surah": 1,
+      "ayah": 1,
+      "arabic": "بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ",
+      "tafsir": ["...", "..."]
     }
   ]
 }
@@ -50,7 +48,7 @@ pip install ebooklib beautifulsoup4 lxml
 python3 parse_epub.py
 ```
 
-На выходе появится `tafsir_ibn_kathir.json` (~17.5 МБ) в корне проекта.
+На выходе в папке `output/` появятся файлы `001.json` … `114.json` — по одному на суру.
 
 ## Проверка целостности
 
@@ -59,5 +57,5 @@ python3 parse_epub.py
 ## Файлы
 
 - `parse_epub.py` — скрипт-парсер
-- `Коран. Тафсир ибн Касира.epub` — исходник
-- `tafsir_ibn_kathir.json` — результат (не коммитится, см. `.gitignore`)
+- `Коран. Тафсир ибн Касира.epub` — исходник (источник: [quran-online.ru](https://quran-online.ru/))
+- `output/` — результат парсинга (`001.json` … `114.json`), не коммитится (см. `.gitignore`)

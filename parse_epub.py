@@ -14,7 +14,7 @@ from ebooklib import epub
 warnings.filterwarnings("ignore", category=XMLParsedAsHTMLWarning)
 
 EPUB_PATH = Path(__file__).parent / "Коран. Тафсир ибн Касира.epub"
-OUTPUT_PATH = Path(__file__).parent / "tafsir_ibn_kathir.json"
+OUTPUT_DIR = Path(__file__).parent / "output"
 
 VERSE_NUM_RE = re.compile(r"^\s*(\d+)\s*:\s*(\d+)\s*$")
 ARABIC_RE = re.compile(r"[؀-ۿݐ-ݿﭐ-﷿ﹰ-﻿]")
@@ -105,11 +105,9 @@ def parse_surah(doc_item) -> dict | None:
 
 
 def main() -> None:
-    book = epub.read_epub(str(EPUB_PATH))
+    OUTPUT_DIR.mkdir(exist_ok=True)
 
-    def meta(field: str) -> str | None:
-        items = book.get_metadata("DC", field)
-        return items[0][0] if items else None
+    book = epub.read_epub(str(EPUB_PATH))
 
     surahs: list[dict] = []
     for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
@@ -122,23 +120,17 @@ def main() -> None:
 
     surahs.sort(key=lambda s: s["number"])
 
-    result = {
-        "title": meta("title"),
-        "author": meta("creator"),
-        "language": meta("language"),
-        "surahs_count": len(surahs),
-        "surahs": surahs,
-    }
-
-    OUTPUT_PATH.write_text(
-        json.dumps(result, ensure_ascii=False, indent=2),
-        encoding="utf-8",
-    )
+    for surah in surahs:
+        out_file = OUTPUT_DIR / f"{surah['number']:03d}.json"
+        out_file.write_text(
+            json.dumps(surah, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
 
     total_verses = sum(s["verses_count"] for s in surahs)
     print(f"Surahs parsed: {len(surahs)}")
     print(f"Total verses:  {total_verses}")
-    print(f"Output:        {OUTPUT_PATH}")
+    print(f"Output dir:    {OUTPUT_DIR}")
 
 
 if __name__ == "__main__":

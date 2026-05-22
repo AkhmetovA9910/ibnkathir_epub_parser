@@ -31,13 +31,13 @@ def is_arabic(s: str) -> bool:
 
 
 def parse_verse(div) -> dict | None:
-    """Extract one verse: number, arabic text, list of tafsir paragraphs."""
+    """Extract one verse: number and list of tafsir paragraphs."""
     paragraphs = div.find_all("p", recursive=False)
     if not paragraphs:
         return None
 
     number_raw = None
-    arabic = ""
+    skip_arabic = True
     tafsir: list[str] = []
 
     for i, p in enumerate(paragraphs):
@@ -49,8 +49,8 @@ def parse_verse(div) -> dict | None:
             number_raw = text_of(p.find("strong"))
             continue
 
-        if not arabic and is_arabic(text):
-            arabic = text
+        if skip_arabic and is_arabic(text):
+            skip_arabic = False
             continue
 
         tafsir.append(text)
@@ -66,7 +66,6 @@ def parse_verse(div) -> dict | None:
         "reference": number_raw,
         "surah": surah_num,
         "ayah": ayah_num,
-        "arabic": arabic,
         "tafsir": tafsir,
     }
 

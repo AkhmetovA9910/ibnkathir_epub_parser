@@ -1,0 +1,14 @@
+# Output
+tafsir_ibn_kathir.json
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.Python
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/

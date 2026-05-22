@@ -31,7 +31,7 @@ def is_arabic(s: str) -> bool:
 
 
 def parse_verse(div) -> dict | None:
-    """Extract one verse: number and list of tafsir paragraphs."""
+    """Extract one verse: number and tafsir paragraphs joined by newline."""
     paragraphs = div.find_all("p", recursive=False)
     if not paragraphs:
         return None
@@ -59,24 +59,21 @@ def parse_verse(div) -> dict | None:
         return None
 
     m = VERSE_NUM_RE.match(number_raw)
-    surah_num = int(m.group(1)) if m else None
-    ayah_num = int(m.group(2)) if m else None
+    sura_num = int(m.group(1)) if m else None
+    ayat_num = int(m.group(2)) if m else None
 
     return {
-        "reference": number_raw,
-        "surah": surah_num,
-        "ayah": ayah_num,
-        "tafsir": tafsir,
+        "sura": sura_num,
+        "ayat": ayat_num,
+        "text": "\n".join(tafsir),
     }
 
 
-def parse_surah(doc_item) -> dict | None:
-    """Parse one surah document into a dict."""
+def parse_surah(doc_item) -> list[dict]:
+    """Parse one surah document into a list of verse dicts."""
     soup = BeautifulSoup(doc_item.get_content(), "xml")
-    h1 = soup.find("h1")
-    if not h1:
-        return None
-    title = text_of(h1)
+    if not soup.find("h1"):
+        return []
 
     verses: list[dict] = []
     for vdiv in soup.find_all("div", class_="verse"):
@@ -84,23 +81,7 @@ def parse_surah(doc_item) -> dict | None:
         if v:
             verses.append(v)
 
-    if not verses:
-        return None
-
-    surah_number = verses[0]["surah"]
-    name_ru, name_translit = title, None
-    m = re.match(r"^(.*?)\s*\((.+)\)\s*$", title)
-    if m:
-        name_ru, name_translit = m.group(1).strip(), m.group(2).strip()
-
-    return {
-        "number": surah_number,
-        "title": title,
-        "name_ru": name_ru,
-        "name_translit": name_translit,
-        "verses_count": len(verses),
-        "verses": verses,
-    }
+    return verses
 
 
 def main() -> None:
@@ -108,26 +89,26 @@ def main() -> None:
 
     book = epub.read_epub(str(EPUB_PATH))
 
-    surahs: list[dict] = []
+    surah_map: dict[int, list[dict]] = {}
     for item in book.get_items_of_type(ebooklib.ITEM_DOCUMENT):
         name = item.get_name()
         if not re.match(r"content/s\d+\.xhtml$", name):
             continue
-        surah = parse_surah(item)
-        if surah:
-            surahs.append(surah)
+        verses = parse_surah(item)
+        if verses:
+            sura_num = verses[0]["sura"]
+            surah_map.setdefault(sura_num, []).extend(verses)
 
-    surahs.sort(key=lambda s: s["number"])
-
-    for surah in surahs:
-        out_file = OUTPUT_DIR / f"{surah['number']:03d}.json"
+    for sura_num in sorted(surah_map):
+        verses = surah_map[sura_num]
+        out_file = OUTPUT_DIR / f"{sura_num:03d}.json"
         out_file.write_text(
-            json.dumps(surah, ensure_ascii=False, indent=2),
+            json.dumps(verses, ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
 
-    total_verses = sum(s["verses_count"] for s in surahs)
-    print(f"Surahs parsed: {len(surahs)}")
+    total_verses = sum(len(v) for v in surah_map.values())
+    print(f"Surahs parsed: {len(surah_map)}")
     print(f"Total verses:  {total_verses}")
     print(f"Output dir:    {OUTPUT_DIR}")
 
